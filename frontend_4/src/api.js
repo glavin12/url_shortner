@@ -170,8 +170,8 @@ export async function apiShortenUrl(url) {
   });
 }
 
-export async function apiGetAllUrls(email) {
-  return apiFetch(`/${email}/get_all_urls`);
+export async function apiGetAllUrls(email, page = 1, size = 10) {
+  return apiFetch(`/${email}/get_all_urls?page=${page}&size=${size}`);
 }
 
 export async function apiDeleteUrl(shortUrl) {
@@ -186,6 +186,6 @@ export async function apiDeleteAllUrls(email) {
   });
 }
 
-export async function apiGetAnalytics(shortUrl) {
-  return apiFetch(`/analytics/${shortUrl}`);
+export async function apiGetAnalytics(shortUrl, page = 1, size = 10) {
+  return apiFetch(`/analytics/${shortUrl}?page=${page}&size=${size}`);
 }

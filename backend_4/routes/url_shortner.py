@@ -1,4 +1,4 @@
-from fastapi import HTTPException, BackgroundTasks,Request
+from fastapi import HTTPException, BackgroundTasks,Request,Query    
 from auth.auth_jwt import verify_access_token
 from fastapi import APIRouter,Depends
 from fastapi.responses import RedirectResponse
@@ -152,8 +152,9 @@ def delete_all_urls(user_email:str,request:Request,db=Depends(get_db),current_us
             detail="No URLs found to delete"
         )
     
-    # 1. Fetch all URL IDs belonging to this user
+    # 1. Fetch all URL IDs and short_urls belonging to this user
     url_ids = [item.id for item in url_objs]
+    short_urls = [item.short_url for item in url_objs]
     
     # 2. Delete all analytics records associated with these URLs first (preventing FK violation)
     db.query(clickanalytic).filter(clickanalytic.url_id.in_(url_ids)).delete(synchronize_session=False)
@@ -163,14 +164,14 @@ def delete_all_urls(user_email:str,request:Request,db=Depends(get_db),current_us
     
     db.commit()
 
-    # Evict all the user's deleted URLs from Redis cache
-    for item in url_objs:
-        r.delete(item.short_url)
+    # Evict all the user's deleted URLs from Redis cache using pre-fetched strings
+    for short_url in short_urls:
+        r.delete(short_url)
 
     return {"message": "all urls deleted successfully"}
 @router.get("/{user_email}/get_all_urls")
 @limiter.limit("5/minute")
-def get_user_url(user_email:str,request:Request,db=Depends(get_db),current_user=Depends(verify_access_token)):
+def get_user_url(user_email:str,request:Request,page:int=Query(1,ge=1),size:int=Query(10,ge=1,le=100),db=Depends(get_db),current_user=Depends(verify_access_token)):
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -187,7 +188,9 @@ def get_user_url(user_email:str,request:Request,db=Depends(get_db),current_user=
             status_code=401,
             detail="Could not validate credentials"
         )
-    url_obj = db.query(UrlShortner).filter(UrlShortner.user_id == user_id).all()
+    
+    # Apply pagination using .offset() and .limit()
+    url_obj = db.query(UrlShortner).filter(UrlShortner.user_id == user_id).offset((page - 1) * size).limit(size).all()
     final_obj = {}
     for item in url_obj:
         final_obj[item.id] = {
@@ -202,7 +205,7 @@ def get_user_url(user_email:str,request:Request,db=Depends(get_db),current_user=
 
 @router.get("/analytics/{short_url}")
 @limiter.limit("5/minute")
-def get_analytics(short_url:str,request:Request,db=Depends(get_db),current_user=Depends(verify_access_token)):
+def get_analytics(short_url:str,request:Request,page:int=Query(1,ge=1),size:int=Query(10,ge=1,le=100),db=Depends(get_db),current_user=Depends(verify_access_token)):
     if not current_user:
         raise HTTPException(
             status_code=401,
@@ -214,7 +217,7 @@ def get_analytics(short_url:str,request:Request,db=Depends(get_db),current_user=
             status_code=401,
             detail="Could not validate credentials"
         )
-    url_obj=db.query(UrlShortner).filter(UrlShortner.short_url==short_url).first()
+    url_obj = db.query(UrlShortner).filter(UrlShortner.short_url == short_url).first()
     if not url_obj:
         raise HTTPException(
             status_code=404,
@@ -225,6 +228,7 @@ def get_analytics(short_url:str,request:Request,db=Depends(get_db),current_user=
             status_code=401,
             detail="unauthorised"
         )
-    analytic_obj=db.query(clickanalytic).filter(clickanalytic.url_id==url_obj.id).all()
+    # Apply pagination using .offset() and .limit() on the clickanalytic events
+    analytic_obj = db.query(clickanalytic).filter(clickanalytic.url_id == url_obj.id).offset((page - 1) * size).limit(size).all()
     # It is standard to return an empty list [] if there are no clicks yet, rather than raising a 404 error
     return analytic_obj

@@ -345,6 +345,24 @@
   border-radius: var(--radius-lg);
 }
 
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  padding: 0.5rem 0;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.pagination-info {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .stats-row {

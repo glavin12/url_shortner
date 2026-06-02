@@ -13,6 +13,13 @@ import './Dashboard.css';
 
 const API_BASE = 'http://localhost:8000';
 
+// Helper to parse naive UTC datetime strings from backend as proper UTC
+const parseUTC = (dateStr) => {
+  if (!dateStr) return new Date();
+  const normalized = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : `${dateStr}Z`;
+  return new Date(normalized);
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const toast = useToast();
@@ -22,19 +29,30 @@ export default function Dashboard() {
   const [shortenInput, setShortenInput] = useState('');
   const [shortening, setShortening] = useState(false);
 
-  // Analytics modal
+  // URL pagination state
+  const [urlsPage, setUrlsPage] = useState(1);
+  const [hasMoreUrls, setHasMoreUrls] = useState(false);
+  const urlsPageSize = 10;
+
+  // Analytics modal & pagination state
   const [analyticsModal, setAnalyticsModal] = useState(null);
   const [analyticsData, setAnalyticsData] = useState([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsPage, setAnalyticsPage] = useState(1);
+  const [hasMoreAnalytics, setHasMoreAnalytics] = useState(false);
+  const analyticsPageSize = 10;
 
   // Confirm modal
   const [confirmModal, setConfirmModal] = useState(null);
 
-  const fetchUrls = useCallback(async () => {
+  const fetchUrls = useCallback(async (page = 1) => {
     if (!user) return;
     try {
-      const data = await apiGetAllUrls(user.email);
+      setLoading(true);
+      const data = await apiGetAllUrls(user.email, page, urlsPageSize);
       setUrls(data);
+      setUrlsPage(page);
+      setHasMoreUrls(Object.keys(data).length === urlsPageSize);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -43,7 +61,7 @@ export default function Dashboard() {
   }, [user, toast]);
 
   useEffect(() => {
-    fetchUrls();
+    fetchUrls(1);
   }, [fetchUrls]);
 
   if (!user) return <Navigate to="/login" replace />;
@@ -58,7 +76,7 @@ export default function Dashboard() {
       await apiShortenUrl(shortenInput.trim());
       setShortenInput('');
       toast.success('URL shortened successfully!');
-      await fetchUrls();
+      await fetchUrls(1); // Go back to page 1 to see the new URL
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -75,7 +93,9 @@ export default function Dashboard() {
         try {
           await apiDeleteUrl(shortUrl);
           toast.success('URL deleted');
-          await fetchUrls();
+          const currentUrlsCount = Object.keys(urls).length;
+          const targetPage = (currentUrlsCount === 1 && urlsPage > 1) ? urlsPage - 1 : urlsPage;
+          await fetchUrls(targetPage);
         } catch (err) {
           toast.error(err.message);
         }
@@ -94,6 +114,8 @@ export default function Dashboard() {
           await apiDeleteAllUrls(user.email);
           toast.success('All URLs deleted');
           setUrls({});
+          setUrlsPage(1);
+          setHasMoreUrls(false);
         } catch (err) {
           toast.error(err.message);
         }
@@ -102,13 +124,17 @@ export default function Dashboard() {
   };
 
   /* --- Analytics --- */
-  const openAnalytics = async (shortUrl) => {
+  const openAnalytics = async (shortUrl, page = 1) => {
     setAnalyticsModal(shortUrl);
     setAnalyticsLoading(true);
-    setAnalyticsData([]);
+    if (page === 1) {
+      setAnalyticsData([]);
+    }
     try {
-      const data = await apiGetAnalytics(shortUrl);
+      const data = await apiGetAnalytics(shortUrl, page, analyticsPageSize);
       setAnalyticsData(data);
+      setAnalyticsPage(page);
+      setHasMoreAnalytics(data.length === analyticsPageSize);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -205,56 +231,77 @@ export default function Dashboard() {
               <p>Paste a URL above to create your first short link</p>
             </div>
           ) : (
-            <div className="url-list">
-              {urlEntries
-                .sort(([, a], [, b]) => new Date(b.created_at) - new Date(a.created_at))
-                .map(([id, data]) => (
-                  <div key={id} className="url-card glass-card">
-                    <div className="url-card-info">
-                      <div
-                        className="url-card-short"
-                        onClick={() => copyLink(data.short_url)}
-                        title="Click to copy"
-                      >
-                        {API_BASE}/{data.short_url}
-                        <span className="copy-icon">📋</span>
+            <>
+              <div className="url-list">
+                {urlEntries
+                  .sort(([, a], [, b]) => parseUTC(b.created_at) - parseUTC(a.created_at))
+                  .map(([id, data]) => (
+                    <div key={id} className="url-card glass-card">
+                      <div className="url-card-info">
+                        <div
+                          className="url-card-short"
+                          onClick={() => copyLink(data.short_url)}
+                          title="Click to copy"
+                        >
+                          {API_BASE}/{data.short_url}
+                          <span className="copy-icon">📋</span>
+                        </div>
+                        <div className="url-card-original" title={data.url}>
+                          {data.url}
+                        </div>
+                        <div className="url-card-meta">
+                          <span className="clicks">
+                            ▲ {data.clicks} click{data.clicks !== 1 ? 's' : ''}
+                          </span>
+                          <span>
+                            {parseUTC(data.created_at).toLocaleDateString(
+                              'en-US',
+                              {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              }
+                            )}
+                          </span>
+                        </div>
                       </div>
-                      <div className="url-card-original" title={data.url}>
-                        {data.url}
-                      </div>
-                      <div className="url-card-meta">
-                        <span className="clicks">
-                          ▲ {data.clicks} click{data.clicks !== 1 ? 's' : ''}
-                        </span>
-                        <span>
-                          {new Date(data.created_at).toLocaleDateString(
-                            'en-US',
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            }
-                          )}
-                        </span>
+                      <div className="url-card-actions">
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => openAnalytics(data.short_url)}
+                        >
+                          Analytics
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDelete(data.short_url)}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
-                    <div className="url-card-actions">
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => openAnalytics(data.short_url)}
-                      >
-                        Analytics
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDelete(data.short_url)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
+                  ))}
+              </div>
+
+              {/* URL list pagination controls */}
+              <div className="pagination-controls">
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={urlsPage === 1}
+                  onClick={() => fetchUrls(urlsPage - 1)}
+                >
+                  ◀ Prev
+                </button>
+                <span className="pagination-info">Page {urlsPage}</span>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={!hasMoreUrls}
+                  onClick={() => fetchUrls(urlsPage + 1)}
+                >
+                  Next ▶
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -286,22 +333,45 @@ export default function Dashboard() {
                   <p>No clicks recorded yet</p>
                 </div>
               ) : (
-                <div className="analytics-list">
-                  {analyticsData.map((click, i) => (
-                    <div key={click.id || i} className="analytics-item">
-                      <span className="click-number">#{i + 1}</span>
-                      <span className="click-time">
-                        {new Date(click.clicked_at).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <div className="analytics-list">
+                    {analyticsData.map((click, i) => (
+                      <div key={click.id || i} className="analytics-item">
+                        <span className="click-number">
+                          #{(analyticsPage - 1) * analyticsPageSize + i + 1}
+                        </span>
+                        <span className="click-time">
+                          {parseUTC(click.clicked_at).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Analytics pagination controls */}
+                  <div className="pagination-controls">
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      disabled={analyticsPage === 1}
+                      onClick={() => openAnalytics(analyticsModal, analyticsPage - 1)}
+                    >
+                      ◀ Prev
+                    </button>
+                    <span className="pagination-info">Page {analyticsPage}</span>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      disabled={!hasMoreAnalytics}
+                      onClick={() => openAnalytics(analyticsModal, analyticsPage + 1)}
+                    >
+                      Next ▶
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>
