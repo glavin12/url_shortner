@@ -14,7 +14,7 @@ import re
 # pyrefly: ignore [missing-import]
 from database.database_models import UrlShortner, users,clickanalytic
 from database.database import get_db, SessionLocal
-from database.schemas import post_url
+from database.schemas import post_url, AnalyticsClick, AnalyticsSummary
 from database.redis_1 import r
 from limiter import limiter
 
@@ -348,7 +348,7 @@ def get_user_url(
     return final_obj
 
 
-@router.get("/analytics/{short_url}")
+@router.get("/analytics/{short_url}", response_model=list[AnalyticsClick])
 @limiter.limit("5/minute")
 def get_analytics(short_url:str,request:Request,page:int=Query(1,ge=1),size:int=Query(10,ge=1,le=100),db=Depends(get_db),current_user=Depends(verify_access_token)):
     if not current_user:
@@ -378,7 +378,7 @@ def get_analytics(short_url:str,request:Request,page:int=Query(1,ge=1),size:int=
     # It is standard to return an empty list [] if there are no clicks yet, rather than raising a 404 error
     return analytic_obj
 
-@router.get("/analytics/{short_url}/summary")
+@router.get("/analytics/{short_url}/summary", response_model=AnalyticsSummary)
 @limiter.limit("5/minute")
 def get_analytics_summary(short_url:str,request:Request,db=Depends(get_db),current_user=Depends(verify_access_token)):
     if not current_user:
