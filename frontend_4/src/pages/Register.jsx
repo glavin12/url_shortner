@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
-import './Auth.css';
 
 export default function Register() {
   const { user, register } = useAuth();
@@ -37,21 +36,21 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-container" style={{ animationDelay: '0.1s' }}>
-        <div className="auth-header">
-          <h1>Create Account</h1>
-          <p>Start shortening URLs for free</p>
+    <div className="min-h-[calc(100vh-80px)] bg-charcoal text-cream flex items-center justify-center p-6">
+      <div className="w-full max-w-md animate-fadeInUp">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight mb-2">Create Account</h1>
+          <p className="text-cream/50">Start shortening URLs for free</p>
         </div>
 
-        <form className="auth-form glass-card" onSubmit={handleSubmit}>
-          {error && <div className="auth-error">{error}</div>}
+        <form className="bg-[#222222] border border-white/5 rounded-[20px] p-8 shadow-2xl" onSubmit={handleSubmit}>
+          {error && <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm">{error}</div>}
 
-          <div className="input-group">
-            <label htmlFor="register-email">Email</label>
+          <div className="mb-6">
+            <label className="block text-cream/70 text-sm font-bold mb-2" htmlFor="register-email">Email</label>
             <input
               id="register-email"
-              className="input"
+              className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-cream placeholder:text-cream/30 focus:border-coral/50 outline-none transition-colors"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -60,11 +59,11 @@ export default function Register() {
             />
           </div>
 
-          <div className="input-group">
-            <label htmlFor="register-password">Password</label>
+          <div className="mb-6">
+            <label className="block text-cream/70 text-sm font-bold mb-2" htmlFor="register-password">Password</label>
             <input
               id="register-password"
-              className="input"
+              className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-cream placeholder:text-cream/30 focus:border-coral/50 outline-none transition-colors"
               type="password"
               placeholder="Min 6 characters"
               value={password}
@@ -75,11 +74,11 @@ export default function Register() {
             />
           </div>
 
-          <div className="input-group">
-            <label htmlFor="register-confirm">Confirm Password</label>
+          <div className="mb-8">
+            <label className="block text-cream/70 text-sm font-bold mb-2" htmlFor="register-confirm">Confirm Password</label>
             <input
               id="register-confirm"
-              className="input"
+              className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-cream placeholder:text-cream/30 focus:border-coral/50 outline-none transition-colors"
               type="password"
               placeholder="••••••••"
               value={confirmPassword}
@@ -92,16 +91,16 @@ export default function Register() {
 
           <button
             type="submit"
-            className="btn btn-primary btn-lg"
+            className="w-full bg-coral text-[#1a1a1a] font-bold py-3 px-4 rounded-xl hover:bg-coral/90 transition-colors disabled:opacity-70"
             disabled={loading}
           >
-            {loading ? <span className="spinner"></span> : 'Create Account'}
+            {loading ? 'Creating...' : 'Create Account'}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div className="text-center mt-8 text-cream/50 text-sm">
           Already have an account?{' '}
-          <Link to="/login">Sign in</Link>
+          <Link to="/login" className="text-coral hover:underline font-medium">Sign in</Link>
         </div>
       </div>
     </div>

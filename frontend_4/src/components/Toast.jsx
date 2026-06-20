@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import './Toast.css';
 
 const ToastContext = createContext(null);
 
@@ -34,15 +33,26 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      <div className="toast-container">
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`toast toast-${t.type} ${t.exiting ? 'toast-exit' : ''}`}
-          >
-            {t.message}
-          </div>
-        ))}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {toasts.map((t) => {
+          const baseClasses = "min-w-[300px] px-6 py-4 rounded-xl shadow-2xl font-medium text-sm transition-all duration-300 transform border";
+          const exitClasses = t.exiting ? "opacity-0 translate-x-8" : "opacity-100 translate-x-0";
+          
+          let typeClasses = "";
+          if (t.type === 'success') {
+            typeClasses = "bg-green-500/10 text-green-400 border-green-500/20";
+          } else if (t.type === 'error') {
+            typeClasses = "bg-red-500/10 text-red-400 border-red-500/20";
+          } else {
+            typeClasses = "bg-[#222222] text-cream border-white/10";
+          }
+
+          return (
+            <div key={t.id} className={`${baseClasses} ${exitClasses} ${typeClasses}`}>
+              {t.message}
+            </div>
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );

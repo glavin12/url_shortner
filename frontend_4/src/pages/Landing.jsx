@@ -1,89 +1,49 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './Landing.css';
 
 export default function Landing() {
   const { user } = useAuth();
 
   return (
-    <div className="landing">
-      {/* Hero */}
-      <section className="hero">
-        <div className="hero-badge">
-          <span className="dot"></span>
-          Now with real-time analytics
-        </div>
-
-        <h1>
-          Shorten. Share.
-          <br />
-          <span className="gradient-text">Track Everything.</span>
+    <div className="min-h-[calc(100vh-80px)] bg-charcoal text-cream flex flex-col items-center justify-center p-6">
+      
+      <div className="text-center max-w-3xl mx-auto animate-fadeInDown">
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 text-cream leading-tight">
+          Shorten Your Links,<br/>
+          <span className="text-coral">Amplify Your Reach</span>
         </h1>
-
-        <p className="hero-subtitle">
-          Transform long, ugly URLs into clean, trackable links. Get detailed
-          click analytics and manage all your links from one premium dashboard.
+        
+        <p className="text-cream/60 max-w-2xl mx-auto text-xl font-light leading-relaxed mb-12">
+          Powerful analytics and simple link management for marketers and developers.
+          Engineered for speed and high-contrast utility.
         </p>
 
-        <div className="hero-cta">
+        <div className="flex items-center justify-center gap-4 animate-fadeInUp">
           {user ? (
-            <Link to="/dashboard" className="btn btn-primary btn-lg">
+            <Link 
+              to="/dashboard" 
+              className="bg-coral text-charcoal font-bold px-8 py-4 rounded-xl hover:bg-coral/90 transition-colors shadow-lg shadow-coral/20"
+            >
               Go to Dashboard →
             </Link>
           ) : (
             <>
-              <Link to="/register" className="btn btn-primary btn-lg">
+              <Link 
+                to="/register" 
+                className="bg-coral text-charcoal font-bold px-8 py-4 rounded-xl hover:bg-coral/90 transition-colors shadow-lg shadow-coral/20"
+              >
                 Start For Free →
               </Link>
-              <Link to="/login" className="btn btn-ghost btn-lg">
+              <Link 
+                to="/login" 
+                className="bg-white/5 text-cream border border-white/10 font-bold px-8 py-4 rounded-xl hover:bg-white/10 transition-colors"
+              >
                 Sign In
               </Link>
             </>
           )}
         </div>
-      </section>
-
-      {/* Features */}
-      <section className="features">
-        <div className="features-header">
-          <h2>Why Sniplink?</h2>
-          <p>Everything you need to manage and track your links</p>
-        </div>
-
-        <div className="features-grid">
-          <div className="feature-card glass-card">
-            <div className="feature-icon">🔗</div>
-            <h3>Instant Shortening</h3>
-            <p>
-              Paste any URL and get a short, clean link in milliseconds. 
-              Cached with Redis for blazing fast redirects.
-            </p>
-          </div>
-
-          <div className="feature-card glass-card">
-            <div className="feature-icon">📊</div>
-            <h3>Click Analytics</h3>
-            <p>
-              Track every click with timestamps. See exactly when your 
-              audience engages with your links.
-            </p>
-          </div>
-
-          <div className="feature-card glass-card">
-            <div className="feature-icon">🛡️</div>
-            <h3>Secure & Protected</h3>
-            <p>
-              JWT authentication, rate limiting, and encrypted passwords. 
-              Your data is always safe.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="landing-footer">
-        <p>Built with FastAPI, React & Redis — © {new Date().getFullYear()} Sniplink</p>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
    Token storage, auto-refresh, and auth error handling
    ============================================================ */
 
-const API_BASE = 'https://pretty-laughter-production.up.railway.app';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://pretty-laughter-production.up.railway.app';
 
 /* --- Token helpers --- */
 export function getAccessToken() {
@@ -18,7 +18,12 @@ export function getUserEmail() {
   const token = getAccessToken();
   if (!token) return null;
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const payload = JSON.parse(jsonPayload);
     return payload.sub;
   } catch {
     return null;
@@ -38,7 +43,12 @@ export function clearTokens() {
 export function isTokenExpired(token) {
   if (!token) return true;
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const payload = JSON.parse(jsonPayload);
     return payload.exp * 1000 < Date.now();
   } catch {
     return true;
