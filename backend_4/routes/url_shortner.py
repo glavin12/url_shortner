@@ -149,7 +149,9 @@ def get_short_url(short_url:str, request:Request,background_tasks: BackgroundTas
         # so the user is redirected immediately without waiting for DB writes!
         background_tasks.add_task(record_click, short_url, user_agent, referrer)
         
-        return RedirectResponse(url=target_url,status_code=302)
+        response = RedirectResponse(url=target_url,status_code=302)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return response
         
     url_obj=db.query(UrlShortner).filter(UrlShortner.short_url==short_url).first()
     
@@ -182,7 +184,10 @@ def get_short_url(short_url:str, request:Request,background_tasks: BackgroundTas
     target_url = url_obj.url
     if not (target_url.startswith("http://") or target_url.startswith("https://") or target_url.startswith("//")):
         target_url = "https://" + target_url
-    return RedirectResponse(url=target_url,status_code=302)
+        
+    response = RedirectResponse(url=target_url,status_code=302)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 @router.delete("/delete/{short_url}")
