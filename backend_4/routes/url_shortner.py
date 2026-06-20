@@ -83,12 +83,15 @@ async def shortner(
         shorturl = shortuuid.uuid()[:6]
     
     # Check if this user has already shortened this exact URL before
-    existing_url = db.query(UrlShortner).filter(
-        UrlShortner.url == url.url, 
-        UrlShortner.user_id == user_id
-    ).first()
-    if existing_url:
-        return existing_url
+    # Only do this if they didn't provide a custom alias, because if they want a custom alias,
+    # they want a NEW link for the same destination.
+    if not url.custom_alias:
+        existing_url = db.query(UrlShortner).filter(
+            UrlShortner.url == url.url, 
+            UrlShortner.user_id == user_id
+        ).first()
+        if existing_url:
+            return existing_url
     url_obj = UrlShortner(
         url=url.url, 
         short_url=shorturl, 
