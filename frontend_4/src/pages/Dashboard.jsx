@@ -34,13 +34,14 @@ export default function Dashboard() {
 
   const [urlsPage, setUrlsPage] = useState(1);
   const [hasMoreUrls, setHasMoreUrls] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const urlsPageSize = 10;
 
-  const fetchUrls = useCallback(async (page = 1) => {
+  const fetchUrls = useCallback(async (page = 1, search = '') => {
     if (!user) return;
     try {
       setLoading(true);
-      const data = await apiGetAllUrls(user.email, page, urlsPageSize);
+      const data = await apiGetAllUrls(user.email, page, urlsPageSize, search);
       setUrls(data || {});
       setUrlsPage(page);
       setHasMoreUrls(Object.keys(data || {}).length === urlsPageSize);
@@ -52,7 +53,7 @@ export default function Dashboard() {
   }, [user, toast]);
 
   useEffect(() => {
-    fetchUrls(1);
+    fetchUrls(1, searchInput);
   }, [fetchUrls]);
 
   if (!user) return <Navigate to="/login" replace />;
@@ -231,15 +232,32 @@ export default function Dashboard() {
 
           {/* History Table */}
           <div className="lg:col-span-2 bg-[#222222] border border-white/5 rounded-[20px] p-8 shadow-xl flex flex-col">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
               <h3 className="text-xl font-bold text-cream tracking-tight">Recent Links</h3>
-              <button 
-                onClick={() => fetchUrls(1)}
-                disabled={loading}
-                className="text-mustard/80 text-sm font-medium hover:text-mustard flex items-center gap-2 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Refreshing...' : 'Refresh Analytics ↻'}
-              </button>
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <input 
+                  type="text" 
+                  placeholder="Search URLs..." 
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchUrls(1, searchInput)}
+                  className="bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-sm text-cream outline-none focus:border-coral/50 transition-colors w-full sm:w-auto"
+                />
+                <button 
+                  onClick={() => fetchUrls(1, searchInput)}
+                  className="bg-coral/20 text-coral text-sm font-medium px-4 py-2 rounded-lg hover:bg-coral/30 transition-colors flex-1 sm:flex-none"
+                >
+                  Search
+                </button>
+                <button 
+                  onClick={() => fetchUrls(1, searchInput)}
+                  disabled={loading}
+                  className="text-mustard/80 text-sm font-medium hover:text-mustard flex items-center justify-center gap-2 transition-colors disabled:opacity-50 flex-1 sm:flex-none"
+                  title="Refresh"
+                >
+                  {loading ? '...' : '↻'}
+                </button>
+              </div>
             </div>
             
             <div className="overflow-x-auto">
@@ -253,7 +271,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {urlEntries.slice(0, 5).map(([id, data]) => (
+                  {urlEntries.map(([id, data]) => (
                     <tr key={id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors">
                       <td className="py-5 pr-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
@@ -281,6 +299,27 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {urlEntries.length > 0 && (
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/5">
+                <button 
+                  disabled={urlsPage === 1 || loading} 
+                  onClick={() => fetchUrls(urlsPage - 1, searchInput)} 
+                  className="text-sm bg-white/5 hover:bg-white/10 text-cream px-4 py-2 rounded-lg transition-colors disabled:opacity-30"
+                >
+                  ← Previous
+                </button>
+                <span className="text-sm text-cream/50 font-medium">Page {urlsPage}</span>
+                <button 
+                  disabled={!hasMoreUrls || loading} 
+                  onClick={() => fetchUrls(urlsPage + 1, searchInput)} 
+                  className="text-sm bg-white/5 hover:bg-white/10 text-cream px-4 py-2 rounded-lg transition-colors disabled:opacity-30"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
             {totalUrls === 0 && !loading && (
                <div className="text-center text-cream/30 py-12 font-light">No links created yet.</div>
             )}

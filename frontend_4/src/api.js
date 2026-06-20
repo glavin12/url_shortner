@@ -184,8 +184,12 @@ export async function apiShortenUrl(url, customAlias = null) {
   });
 }
 
-export async function apiGetAllUrls(email, page = 1, size = 10) {
-  return apiFetch(`/${email}/get_all_urls?page=${page}&size=${size}`);
+export async function apiGetAllUrls(email, page = 1, size = 10, search = '') {
+  let url = `/${email}/get_all_urls?page=${page}&size=${size}`;
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
+  return apiFetch(url);
 }
 
 export async function apiDeleteUrl(shortUrl) {
