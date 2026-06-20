@@ -23,5 +23,7 @@ dependencies = [
     "shortuuid>=1.0.13",
     "slowapi>=0.1.9",
     "sqlalchemy>=2.0.50",
+    "user-agents>=2.2.0",
     "uvicorn>=0.48.0",
+    "qrcode[pil]>=8.0",
 ]

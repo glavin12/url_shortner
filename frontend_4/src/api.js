@@ -3,7 +3,7 @@
    Token storage, auto-refresh, and auth error handling
    ============================================================ */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://pretty-laughter-production.up.railway.app';
 
 /* --- Token helpers --- */
 export function getAccessToken() {
@@ -163,10 +163,14 @@ export async function apiLogout() {
 /* ============================================================
    URL SHORTENER API
    ============================================================ */
-export async function apiShortenUrl(url) {
+export async function apiShortenUrl(url, customAlias = null) {
+  const body = { url };
+  if (customAlias) {
+    body.custom_alias = customAlias;
+  }
   return apiFetch('/shortner', {
     method: 'POST',
-    json: { url },
+    json: body,
   });
 }
 

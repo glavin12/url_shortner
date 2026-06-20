@@ -11,7 +11,7 @@ import {
 } from '../api';
 import './Dashboard.css';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://pretty-laughter-production.up.railway.app';
 
 // Helper to parse naive UTC datetime strings from backend as proper UTC
 const parseUTC = (dateStr) => {
@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [urls, setUrls] = useState({});
   const [loading, setLoading] = useState(true);
   const [shortenInput, setShortenInput] = useState('');
+  const [aliasInput, setAliasInput] = useState('');
   const [shortening, setShortening] = useState(false);
 
   // URL pagination state
@@ -73,8 +74,10 @@ export default function Dashboard() {
 
     setShortening(true);
     try {
-      await apiShortenUrl(shortenInput.trim());
+      const alias = aliasInput.trim().toLowerCase() || null;
+      await apiShortenUrl(shortenInput.trim(), alias);
       setShortenInput('');
+      setAliasInput('');
       toast.success('URL shortened successfully!');
       await fetchUrls(1); // Go back to page 1 to see the new URL
     } catch (err) {
@@ -194,6 +197,18 @@ export default function Dashboard() {
               onChange={(e) => setShortenInput(e.target.value)}
               required
             />
+            <div className="alias-input-wrapper">
+              <span className="alias-prefix">/</span>
+              <input
+                className="input alias-input"
+                type="text"
+                placeholder="custom-alias (optional)"
+                value={aliasInput}
+                onChange={(e) => setAliasInput(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                minLength={3}
+                maxLength={30}
+              />
+            </div>
             <button
               type="submit"
               className="btn btn-primary"
@@ -202,6 +217,11 @@ export default function Dashboard() {
               {shortening ? <span className="spinner"></span> : 'Shorten'}
             </button>
           </form>
+          {aliasInput && (
+            <p className="alias-hint">
+              Your link will be: <strong>/{aliasInput.toLowerCase()}</strong>
+            </p>
+          )}
         </div>
 
         {/* URL List */}
