@@ -4,8 +4,6 @@ from fastapi import APIRouter,Depends
 from fastapi.responses import RedirectResponse, FileResponse
 from datetime import datetime
 from user_agents import parse
-import qrcode
-import os
 from pathlib import Path
 router = APIRouter()
 import shortuuid
@@ -18,23 +16,6 @@ from database.schemas import post_url, AnalyticsClick, AnalyticsSummary
 from database.redis_1 import r
 from limiter import limiter
 
-# Create QR codes directory if it doesn't exist
-QR_CODE_DIR = Path("qr_codes")
-QR_CODE_DIR.mkdir(parents=True, exist_ok=True)
-
-def generate_qr_code(short_url: str, url_id: int):
-    """Generate QR code for a short URL and save to disk"""
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    # Use the full URL that users will visit
-    full_url = f"http://localhost:8000/{short_url}"  # Update domain in production
-    qr.add_data(full_url)
-    qr.make(fit=True)
-    
-    img = qr.make_image(fill_color="black", back_color="white")
-    filename = f"qr_{url_id}_{short_url}.png"
-    filepath = QR_CODE_DIR / filename
-    img.save(str(filepath))
-    return str(filepath)
 
 # Reserved aliases that conflict with existing API route segments.
 # Users cannot use these as custom aliases to prevent routing collisions.
@@ -99,12 +80,6 @@ async def shortner(
         expires_at=url.expires_at
     )
     db.add(url_obj)
-    db.commit()
-    db.refresh(url_obj)
-    
-    # Generate QR code for the short URL
-    qr_path = generate_qr_code(url_obj.short_url, url_obj.id)
-    url_obj.qr_code_path = qr_path
     db.commit()
     db.refresh(url_obj)
     
