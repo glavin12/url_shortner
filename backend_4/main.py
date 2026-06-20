@@ -17,7 +17,7 @@ app = FastAPI()
 import os
 
 # Get frontend URL from environment variable, default to common development ports
-frontend_urls = os.getenv("FRONTEND_URLS", "http://localhost:5173,http://localhost:3000,https://pretty-laughter-production.up.railway.app").split(",")
+frontend_urls = os.getenv("FRONTEND_URLS", "http://localhost:5173,http://localhost:3000,https://pretty-laughter-production.up.railway.app,https://snaplink-iota.vercel.app").split(",")
 
 app.add_middleware(
     CORSMiddleware,
