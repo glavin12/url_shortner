@@ -23,24 +23,47 @@ def request(method, path, data=None, headers={}):
         except:
             return e.code, e.read().decode()
 
-email = "bhagyalaxmient10@gmail.com" # The user's actual email is probably bhagyalaxmient10@gmail.com from appDataDir path? Wait, path is C:\Users\bhagy.
-# Let's just create a completely valid url manually.
+email = "test_analytics_agent_new@example.com"
+password = "password123"
+print("Registering...")
+status, body = request("POST", "/register", {"email": email, "password": password})
+print(status, body)
 
-status, body = request("POST", "/login", {"email": "test_jwt@example.com", "password": "password123"})
-print("login", status, body)
+print("Logging in...")
+status, body = request("POST", "/login", {"email": email, "password": password})
+print("Login status:", status)
 token = body.get("access_token") if isinstance(body, dict) else None
+
 if token:
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Let's get the urls for test_jwt@example.com
-    status, body = request("GET", "/test_jwt@example.com/get_all_urls", headers=headers)
-    print("get_all_urls", status, body)
-    if isinstance(body, dict) and body:
-        # Get the first URL id
-        first_key = list(body.keys())[0]
-        short_url = body[first_key]["short_url"]
+    # 3. Shorten URL
+    print("Shortening...")
+    status, body = request("POST", "/shortner", {"url": "https://example.com"}, headers)
+    print("Shortener status:", status)
+    
+    if status == 200:
+        short_url = body.get("short_url")
         print("Got short_url:", short_url)
         
-        status, body2 = request("GET", f"/analytics/{short_url}", headers=headers)
-        print("analytics status:", status)
-        print("analytics body:", body2)
+        # 4. Click URL
+        print("Clicking...")
+        try:
+            # We don't want it to actually follow redirects and print a massive html page,
+            # we just want to hit it once. urllib follows redirects by default.
+            urllib.request.urlopen(f"{BASE_URL}/{short_url}")
+        except urllib.error.HTTPError as e:
+            print("Click HTTP error:", e.code)
+        except Exception as e:
+            print("Click success (or other error):", e)
+            
+        # 5. Get all urls to check clicks
+        print("Getting urls...")
+        status, body2 = request("GET", f"/{email}/get_all_urls?page=1&size=10", headers=headers)
+        print("Get all urls status:", status)
+        if isinstance(body2, dict) and body2:
+            first_key = list(body2.keys())[0]
+            clicks = body2[first_key]["clicks"]
+            print(f"Clicks for {short_url}: {clicks}")
+        else:
+            print("No URLs returned.")
